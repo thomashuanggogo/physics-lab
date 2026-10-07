@@ -1,0 +1,8 @@
+{
+  "name": "物理單位與因次拼圖實驗室",
+  "description": "互動式物理單位與因次拆解拼圖測驗，支援音效回饋、公式逐步拆解推導、單元分類與一鍵匯出單一離線 HTML 檔案。",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
