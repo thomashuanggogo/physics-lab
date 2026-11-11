@@ -1,21 +1,622 @@
 <!doctype html>
 <html lang="zh-Hant">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>物理單位與因次拼圖實驗室</title>
-    <meta name="description" content="互動式物理單位與因次拆解拼圖測驗，支援音效回饋、公式逐步拆解推導、單元分類與一鍵匯出單一離線 HTML 檔案。" />
-    <meta property="og:title" content="物理單位與因次拼圖實驗室" />
-    <meta property="og:description" content="互動式物理單位與因次拆解拼圖測驗，支援音效回饋、公式逐步拆解推導、單元分類與一鍵匯出單一離線 HTML 檔案。" />
-    <meta property="og:type" content="website" />
-    <meta name="twitter:card" content="summary_large_image" />
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600;700&family=Noto+Sans+TC:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
-  </head>
-  <body class="bg-slate-50 text-slate-800 antialiased selection:bg-emerald-500 selection:text-white">
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
-</html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>單位與因次拼圖實驗室</title>
+<style>
+:root{--bg:#faf7f0;--card:#fff;--ink:#222;--muted:#666;--red:#d32f2f;--line:#e6ddd0;--accent:#2f7de1}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"PingFang TC","Microsoft JhengHei","Noto Sans TC",sans-serif}
+header{max-width:1280px;margin:0 auto;padding:2px 20px 0;display:flex;align-items:baseline;gap:16px;flex-wrap:wrap}
+header h1{font-size:22px;margin:0}
+header p{font-size:15px;color:var(--muted);margin:0;line-height:1.6}
+.wrap{max-width:1280px;margin:0 auto;padding:2px 20px 6px;display:grid;grid-template-columns:1fr;gap:8px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:0 2px 10px rgba(0,0,0,.05)}
+.stepcard{padding:4px 16px 6px}
+.dotrow{display:flex;align-items:center;gap:8px}
+#dots{display:flex;flex-wrap:wrap;gap:6px}
+.dot{width:34px;height:34px;min-height:0;border-radius:50%;border:2px solid #d8cdbb;background:#fff;font-size:14px;font-weight:700;cursor:pointer;padding:0}
+.dot.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+.dot.done{border-color:var(--accent);color:var(--accent)}
+.dot.on.done{color:#fff}
+.dot:disabled{opacity:.35;cursor:default}
+.nav{display:flex;gap:10px;margin-left:auto}
+.nav button{min-height:36px;padding:6px 14px}
+.step{display:none;font-size:17px;line-height:1.75}
+.step.on{display:block}
+.step h2{margin:2px 0 1px;font-size:19px;line-height:1.45}
+.stepbody{display:flex;gap:22px;align-items:flex-start}
+.txt{flex:1;min-width:0}
+.act{width:332px;flex:none}
+.step .ln{margin:0 0 3px}
+.step .small{font-size:14px;line-height:1.7;color:var(--muted)}
+.red{color:var(--red);font-weight:700}
+.formula{display:block;text-align:center;font-size:28px;margin:4px 0;font-weight:700}
+.box{background:#fff8e1;border:1px solid #f0d98c;border-radius:12px;padding:9px 14px;margin:8px 0;font-size:17px;line-height:1.75}
+.myth{background:#fdecea;border:1px solid #f0c4bf;border-radius:12px;padding:9px 14px;margin:8px 0;font-size:17px;line-height:1.75}
+.box .ln,.myth .ln{margin:0}
+button{font-size:16px;padding:10px 16px;border-radius:12px;border:1px solid #ccc;background:#fff;cursor:pointer;min-height:44px;font-family:inherit}
+button.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+button:disabled{opacity:.45;cursor:default}
+button.active{background:var(--ink);color:#fff;border-color:var(--ink)}
+.simcard{padding:4px 16px 6px}
+canvas.sim{display:block;width:100%;height:auto;background:#fffdf8;border:1px solid var(--line);border-radius:12px}
+.scen{display:none}
+.scen.on{display:block}
+.btnrow{display:flex;gap:10px;margin-top:4px;flex-wrap:wrap;align-items:center}
+.chip{display:inline-block;padding:4px 10px;border-radius:999px;background:var(--bg);border:1px solid var(--line);font-size:14px;font-weight:600}
+.chip b{font-variant-numeric:tabular-nums}
+.choice{display:block;width:100%;text-align:left;margin:0 0 8px;font-size:17px;padding:8px 14px}
+.choice.active{background:var(--ink);color:#fff;border-color:var(--ink)}
+.choicerow{display:flex;gap:10px;flex-wrap:wrap}
+.choicerow .choice{width:auto;margin:0}
+.feedback{font-size:17px;line-height:1.8;margin:2px 0 0;min-height:30px}
+.feedback.ok{color:#1a7f4b;font-weight:700}
+.feedback.no{color:#b3541e;font-weight:700}
+input[type=number]{font-size:19px;padding:9px 10px;border:1px solid #ccc;border-radius:10px;min-height:44px;width:130px;font-family:inherit;text-align:center}
+.fillrow{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:19px;margin:6px 0}
+.bigmem{font-size:26px;font-weight:800;line-height:1.6;text-align:center;margin:8px 0}
+.takeaway{background:#e9f1fa;border:1px solid #d7e3f2;border-radius:12px;padding:10px 16px;margin:8px 0;font-size:17px;line-height:1.8}
+.takeaway .ln{margin:0}
+a.home{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:10px 28px;font-size:17px;font-weight:600;color:#0071e3;background:#fff;border:1px solid #d2d2d7;border-radius:999px;text-decoration:none}
+.concepts{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:6px}
+.concept{background:#f9f7f1;border:1px solid var(--line);border-radius:12px;padding:10px 14px}
+.concept h3{font-size:17px;margin:0 0 2px}
+.concept p{font-size:16px;line-height:1.75;margin:0}
+.mythgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:6px}
+.pill{display:inline-block;padding:4px 12px;border-radius:999px;font-size:13px;font-weight:600;background:#eef3f8;color:var(--accent);border:1px solid #d7e3f2}
+.pill.run{background:#e7f6ee;color:#1a7f4b;border-color:#cde8d8}
+.pill.bad{background:#fdecea;color:#b3541e;border-color:#f0c4bf}
+/* ===== 拼圖區 ===== */
+.puz{display:grid;grid-template-columns:1fr 300px;gap:16px;align-items:start}
+.puz h3{margin:2px 0 2px;font-size:18px}
+.puz .qform{color:var(--muted);font-size:15px;margin:0 0 6px;line-height:1.6}
+.slots{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;min-height:56px;align-items:center}
+.slot{width:56px;height:56px;border:2.5px dashed #9ca3af;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800;color:#c4c4c4;background:#fafafa;cursor:pointer;position:relative}
+.slot.filled{border-style:solid;border-color:var(--c,#374151);background:#fff;color:#111827}
+.slot.filled small{position:absolute;bottom:1px;font-size:9px;font-weight:400;color:#6b7280}
+.slot .rm{position:absolute;top:-9px;right:-9px;width:22px;height:22px;border-radius:50%;background:#ef4444;color:#fff;font-size:13px;font-weight:800;display:none;align-items:center;justify-content:center;line-height:1}
+.slot.filled .rm{display:flex}
+.slot.wrong{border-color:#ef4444;background:#fef2f2}
+.slot.wrong .rm{display:none}
+.fracbar{height:4px;background:#111827;border-radius:2px;margin:6px auto;max-width:400px}
+.ws-note{text-align:center;color:#9ca3af;font-size:13px;margin-top:6px}
+.lib-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.ucard{border:2.5px solid var(--c);background:#fff;border-radius:12px;padding:7px 4px;cursor:pointer;text-align:center;min-height:44px;font-family:inherit}
+.ucard b{display:block;font-size:19px;color:#111827}
+.ucard small{color:#6b7280;font-size:11px}
+.ucard.sel{box-shadow:0 0 0 3px var(--c) inset;background:#f8fafc}
+.lib-title{font-weight:800;font-size:15px;margin:0 0 6px}
+.panel{border-radius:12px;padding:8px 14px;margin-top:8px;font-size:15.5px;line-height:1.7}
+.panel.deriv{background:#f0fdf4;border:1px solid #86efac}
+.panel.hint{background:#fffbeb;border:1px solid #fcd34d}
+.panel .pt{font-weight:800;margin-bottom:2px}
+</style>
+</head>
+<body>
+<header>
+  <h1>單位與因次拼圖實驗室</h1>
+  <p>每個物理量都能拆成幾個基本塊。先猜，再動手拼。</p>
+</header>
+<div class="wrap">
+  <div class="card stepcard">
+    <div class="dotrow">
+      <div id="dots"></div>
+      <div class="nav">
+        <button id="btnPrev">上一步</button>
+        <button class="primary" id="btnNext" disabled>下一步</button>
+      </div>
+    </div>
 
+    <section class="step on" id="s1">
+      <h2>第 1 步・先猜：力的「骨架」是哪一個？</h2>
+      <div class="stepbody">
+        <div class="txt">
+          <p class="ln">牛頓（N）是力的單位，課本寫 F = ma。</p>
+          <p class="ln">如果把力拆到最基本，只剩質量、長度、時間，</p>
+          <p class="ln">你猜它的<span class="red">因次</span>（等一下會解釋）長什麼樣子？</p>
+          <div class="box">
+            <p class="ln">先猜，再驗證。</p>
+            <p class="ln">選一個答案，錯了也沒關係，</p>
+            <p class="ln">猜錯的地方，就是等一下要學的東西。</p>
+          </div>
+        </div>
+        <div class="act">
+          <button class="choice" data-pred="A">A. [M][L][T]⁻²</button>
+          <button class="choice" data-pred="B">B. [M][L]²[T]⁻²</button>
+          <button class="choice" data-pred="C">C. [M][T]⁻²（沒有長度）</button>
+          <p class="feedback" id="predFb"></p>
+        </div>
+      </div>
+    </section>
+
+    <section class="step" id="s2">
+      <h2>第 2 步・因次是什麼：單位的「分類標籤」</h2>
+      <div class="stepbody">
+        <div class="txt">
+          <p class="ln"><span class="red">單位</span>像門牌：公尺、英尺、公里，數字不同、講的是同一件事。</p>
+          <p class="ln"><span class="red">因次</span>像分類標籤：不管用哪個單位量，</p>
+          <p class="ln">長度永遠是長度，時間永遠是時間。</p>
+          <p class="ln">把物理量拆成基本分類的組合，就叫它的因次。</p>
+          <p class="ln">好處：<span class="red">公式對不對，先看因次合不合</span>，數字都還不用算。</p>
+        </div>
+        <div class="act">
+          <p class="feedback">看下面圖：速度不管用 m/s 還是 km/h 量，因次都是 [L] ÷ [T]。</p>
+          <button class="primary" id="btnDimDone">我懂因次是什麼了</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="step" id="s3">
+      <h2>第 3 步・五個基本塊：M、L、T、I、Θ</h2>
+      <div class="stepbody">
+        <div class="txt">
+          <p class="ln"><span class="red">[M]</span> 質量（念 Mass）、<span class="red">[L]</span> 長度（念 Length）、<span class="red">[T]</span> 時間（念 Time）。</p>
+          <p class="ln"><span class="red">[I]</span> 電流、<span class="red">[Θ]</span> 溫度（Θ 念 theta，讀作「西塔」）。</p>
+          <p class="ln">寫法像 [M]¹[L]²[T]⁻²：右上角的數字叫<span class="red">次方</span>，</p>
+          <p class="ln">正的在分子、負的在分母，像 [T]⁻² 就是 1 ÷ [T]²。</p>
+          <p class="ln">這五塊是積木，其他物理量都用它們拼出來。</p>
+        </div>
+        <div class="act">
+          <p class="feedback">下面是五個基本塊和它們對應的 SI 基本單位。先混個臉熟，第 5 步就開始拼。</p>
+          <button class="primary" id="btnBlocksDone">五個基本塊記住了</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="step" id="s4">
+      <h2>第 4 步・拆解示範：一步一步拆「力」</h2>
+      <div class="stepbody">
+        <div class="txt">
+          <p class="ln">拆法只有一招：<span class="red">把公式裡每個量換成它的因次，再相乘除</span>。</p>
+          <span class="formula">F = m × a</span>
+          <p class="ln">a 是加速度，先拆 a：速度 [L][T]⁻¹ 再除以時間，</p>
+          <span class="formula">[a] = [L][T]⁻²</span>
+          <p class="ln">所以力和第 1 步你猜的一樣——往下看對答案。</p>
+        </div>
+        <div class="act">
+          <span class="formula">[F] = [M][L][T]⁻²</span>
+          <p class="feedback" id="s4Fb">第 1 步選 A 的人：你猜對了。選 B 的是把「功」記成力；選 C 的漏了加速度裡的長度。</p>
+          <button class="primary" id="btnDemoDone">拆法看懂了，換我拼</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="step" id="s5">
+      <h2>第 5 步・動手拼 1：力的單位（牛頓 N）</h2>
+      <div class="stepbody">
+        <div class="txt">
+          <p class="ln">換你動手：用右邊的<span class="red">基本單位卡</span>，</p>
+          <p class="ln">在下面拼圖區拼出 1 牛頓等於哪些基本單位的組合。</p>
+          <p class="ln">做法：先點一張單位卡，再點空格放進去；</p>
+          <p class="ln">放錯了點格子右上角的叉叉拿掉。同一側內順序不限。</p>
+        </div>
+        <div class="act">
+          <p class="feedback">提示：F = ma，質量的單位在分子，加速度的單位你剛拆過。</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="step" id="s6">
+      <h2>第 6 步・動手拼 2：功率的因次（瓦特 W）</h2>
+      <div class="stepbody">
+        <div class="txt">
+          <p class="ln">這次拼<span class="red">因次</span>：功率 P = 能量 ÷ 時間。</p>
+          <p class="ln">能量和功同因次：[M][L]²[T]⁻²，先想好再拼。</p>
+          <p class="ln">用右邊的因次卡，在下面拼圖區拼出功率的因次。</p>
+        </div>
+        <div class="act">
+          <p class="feedback">提示：能量除以時間，就是在能量的分母再添一個 [T]。</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="step" id="s7">
+      <h2>第 7 步・挑戰賽：隨機 5 題，首答計分</h2>
+      <div class="stepbody">
+        <div class="txt">
+          <p class="ln">正式測驗：每輪從題庫隨機抽 <span class="red">5 題</span>（2 易＋3 中），</p>
+          <p class="ln">每題 20 分，<span class="red">只有第一次提交就答對才得分</span>。</p>
+          <p class="ln">答錯不扣分，會給提示讓你修正，修正後照樣往下走，</p>
+          <p class="ln">但那題的分數就沒了——所以拼之前先在腦中拆一遍。</p>
+        </div>
+        <div class="act">
+          <p class="feedback">題庫共 27 題：單位拼圖 14 題、因次分析 13 題，本輪抽單位拼圖。右上會即時計分。</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="step" id="s8">
+      <h2>第 8 步・概念卡：四張卡，一次帶走</h2>
+      <div class="stepbody">
+        <div class="txt">
+          <div class="concepts">
+            <div class="concept"><h3>因次是分類標籤</h3><p>單位會換（m、km、英尺），因次不換。拆到 [M]、[L]、[T]，就看到物理量的骨架。</p></div>
+            <div class="concept"><h3>拆法只有一招</h3><p>把公式每個量換成因次再乘除：乘就次方相加，除就次方相減，同類還會相消。</p></div>
+            <div class="concept"><h3>因次先驗算</h3><p>公式左右兩邊因次不同，一定錯；因次相同，不保證對，但先過第一關。</p></div>
+            <div class="concept"><h3>無因次的量</h3><p>角度、摩擦係數、cosθ、½ 這種純數字沒有因次，拼的時候直接忽略。</p></div>
+          </div>
+        </div>
+        <div class="act">
+          <p class="bigmem"><span class="red">單位會變，因次不變——</span><br><span class="red">拆到 M、L、T，公式對不對立刻現形。</span></p>
+          <div class="takeaway">
+            <p class="ln"><b>帶走兩句話：</b></p>
+            <p class="ln">一、拆因次只有一招：每個量換成因次，再乘除。</p>
+            <p class="ln">二、左右因次不同，公式一定錯，先驗再算。</p>
+          </div>
+          <button class="primary" id="btnCardDone">四張卡都看完了</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="step" id="s9">
+      <h2>第 9 步・常見卡關：拼因次最常跌倒的四個地方</h2>
+      <div class="stepbody">
+        <div class="txt">
+          <div class="mythgrid">
+            <div class="myth"><p class="ln"><b>卡關 1：單位和因次搞混？</b></p><p class="ln">m/s 和 km/h 是不同<span class="red">單位</span>，但因次同樣是 [L][T]⁻¹。</p><p class="ln"><b>記住：單位是門牌，因次是分類。</b></p></div>
+            <div class="myth"><p class="ln"><b>卡關 2：平方只平方數字？</b></p><p class="ln">v² 是速度乘速度，單位和因次要<span class="red">整個平方</span>：(m/s)² = m²/s²。</p><p class="ln"><b>記住：次方管整包，不是只管數字。</b></p></div>
+            <div class="myth"><p class="ln"><b>卡關 3：因次對，公式就對？</b></p><p class="ln">Ek 寫成 mv² 或 2mv²，因次都對，但係數錯了答案還是錯。</p><p class="ln"><b>記住：因次是安檢門，過了不代表行李沒問題。</b></p></div>
+            <div class="myth"><p class="ln"><b>卡關 4：相加的量因次可以不同？</b></p><p class="ln">不行。只有<span class="red">因次相同</span>的量能相加減，3 公尺不能加 2 秒。</p><p class="ln"><b>記住：蘋果加橘子，單位先出局。</b></p></div>
+          </div>
+        </div>
+        <div class="act">
+          <p class="feedback">四個卡關，每個都是一句話的陷阱。哪一個你以前也這樣想過？想一想，再往下走。</p>
+          <button class="primary" id="btnMythDone">四個卡關都看懂了</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="step" id="s10">
+      <h2>第 10 步・遷移挑戰：用因次抓錯公式</h2>
+      <div class="stepbody">
+        <div class="txt">
+          <p class="ln">新情境：有人把位移公式寫成 s = v × t²。</p>
+          <p class="ln">先不要算數字，用因次檢查：左邊是長度 [L]，</p>
+          <p class="ln">右邊 [v]×[t]² = [L][T]⁻¹ × [T]² = [L][T]。</p>
+          <p class="ln">左右因次一不一樣？這條公式能不能用？</p>
+        </div>
+        <div class="act">
+          <div class="choicerow">
+            <button class="choice" data-q10="ok">因次相同，可以用</button>
+            <button class="choice" data-q10="bad">因次不同，一定錯</button>
+          </div>
+          <p class="feedback" id="f10Fb"></p>
+          <div id="q10b" style="display:none">
+            <p class="ln">第二問：動量 p = m × v，它的因次分母有幾個 [T]？</p>
+            <div class="fillrow">
+              <span>[T] 的次數 ＝</span>
+              <input type="number" id="inT10" placeholder="?" step="1">
+              <button class="primary" id="btnCheck10">對答案</button>
+            </div>
+            <p class="feedback" id="f10bFb"></p>
+          </div>
+          <div class="btnrow" id="finishRow" style="display:none">
+            <button class="primary" id="btnRestart">再玩一次</button>
+            <a class="home" href="https://thomashuanggogo.github.io/thomashuang/">回實驗室</a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div class="card simcard" id="simcard">
+    <div class="scen on" id="scen-visual">
+      <canvas class="sim" id="visual" width="1240" height="200"></canvas>
+    </div>
+    <div class="scen" id="scen-puzzle">
+      <div class="puz">
+        <div>
+          <h3 id="pzTitle">題目</h3>
+          <p class="qform" id="pzFormula"></p>
+          <div class="slots" id="pzNum"></div>
+          <div class="fracbar" id="pzBar"></div>
+          <div class="slots" id="pzDen"></div>
+          <p class="ws-note">點選右方卡片，再點空格放入；同一側內順序不限。</p>
+          <div class="btnrow" style="justify-content:center">
+            <button class="primary" id="pzSubmit" disabled>提交答案</button>
+            <button id="pzClear">清空重填</button>
+          </div>
+          <div id="pzFeedback"></div>
+        </div>
+        <div>
+          <p class="lib-title" id="pzLibTitle">基本單位庫</p>
+          <div class="lib-grid" id="pzLib"></div>
+        </div>
+      </div>
+    </div>
+    <div class="scen" id="scen-quiz">
+      <div class="puz">
+        <div>
+          <h3 id="qzTitle">題目</h3>
+          <p class="qform" id="qzFormula"></p>
+          <div class="slots" id="qzNum"></div>
+          <div class="fracbar" id="qzBar"></div>
+          <div class="slots" id="qzDen"></div>
+          <p class="ws-note">點選右方卡片，再點空格放入；同一側內順序不限。</p>
+          <div class="btnrow" style="justify-content:center">
+            <button class="primary" id="qzSubmit" disabled>提交答案</button>
+            <button id="qzClear">清空重填</button>
+          </div>
+          <div id="qzFeedback"></div>
+        </div>
+        <div>
+          <p class="lib-title" id="qzLibTitle">基本單位庫</p>
+          <div class="lib-grid" id="qzLib"></div>
+          <div class="btnrow">
+            <span class="chip">題目 <b id="qzProg">1/5</b></span>
+            <span class="chip">首答得分 <b id="qzScore">0</b> / 100</span>
+          </div>
+          <p class="feedback" id="qzSummary"></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+const esc = t => String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;');
+
+/* ================= 題庫（原版 27 題，逐題重推驗證） =================
+   力 [F]=MLT^-2；功/能 ML^2T^-2；功率 ML^2T^-3；壓力 ML^-1T^-2；
+   頻率 T^-1；動量 MLT^-1；電荷 IT；電壓 ML^2T^-3I^-1；
+   彈簧常數 MT^-2；密度 ML^-3；比熱 L^2T^-2Θ^-1 —— 全部核對無誤。 */
+const UNIT_ITEMS = [
+  {s:'m',n:'公尺',c:'#2563eb'},{s:'kg',n:'公斤',c:'#16a34a'},{s:'s',n:'秒',c:'#db2777'},
+  {s:'A',n:'安培',c:'#ca8a04'},{s:'K',n:'克耳文',c:'#ea580c'},{s:'mol',n:'莫耳',c:'#9333ea'},{s:'cd',n:'燭光',c:'#4b5563'}
+];
+const DIM_ITEMS = [
+  {s:'[L]',n:'長度',c:'#2563eb'},{s:'[M]',n:'質量',c:'#16a34a'},{s:'[T]',n:'時間',c:'#db2777'},
+  {s:'[I]',n:'電流',c:'#ca8a04'},{s:'[Θ]',n:'溫度',c:'#ea580c'}
+];
+const UNIT_QS = [
+  {tag:'暖身題',lv:1,title:'速率 (Speed) 的單位',formula:'平均速率＝路程 / 經過時間',num:1,den:1,ans:{num:['m'],den:['s']},deriv:'m / s = m·s⁻¹。對應因次：[v] = [L][T]⁻¹。',hint:'路程固定，走得越久，平均速率會變大還是變小？',hintSub:'用這個趨勢檢查：你的分子、分母放對了嗎？'},
+  {tag:'力學基礎',lv:1,title:'加速度的單位',formula:'平均加速度 a = Δv / Δt',num:1,den:2,ans:{num:['m'],den:['s','s']},deriv:'(m/s) / s = m/s²。對應因次：[a] = [L][T]⁻²。',hint:'同樣的速度變化，若在更短的時間內完成，加速度會怎麼變？',hintSub:'用剛才的變化關係，檢查你組合的式子是否會得到相同趨勢。'},
+  {tag:'力學基礎',lv:2,title:'力（牛頓 N）的單位',formula:'定質量物體的合力 F = ma',num:2,den:2,ans:{num:['kg','m'],den:['s','s']},deriv:'kg × (m/s²) = kg·m/s² = N。對應因次：[F] = [M][L][T]⁻²。',hint:'質量越大、加速度越大，需要的力越大還是越小？',hintSub:'F = ma：想想分子該出現哪兩個單位。'},
+  {tag:'力學題',lv:2,title:'壓力 (Pressure) 的單位',formula:'壓力 p = F⊥ / 面積；F⊥ 是垂直於表面的力',num:1,den:3,ans:{num:['kg'],den:['m','s','s']},deriv:'Pa = N/m² = (kg·m/s²)/m² = kg/(m·s²)。對應因次：[p] = [M][L]⁻¹[T]⁻²。',hint:'同一個力分散在更大的接觸面積上，壓力會怎麼變？',hintSub:'用剛才的變化關係，檢查你組合的式子是否會得到相同趨勢。'},
+  {tag:'能量題',lv:2,title:'功 / 能量 (Work) 的單位',formula:'定力作功 W = Fd cosθ；θ 是力與位移的夾角',num:3,den:2,ans:{num:['kg','m','m'],den:['s','s']},deriv:'N·m = (kg·m/s²) × m = kg·m²/s² = J。對應因次：[E] = [M][L]²[T]⁻²。',hint:'同樣的力，推得越遠，作功越多還是越少？',hintSub:'W = Fd：力的單位你剛拼過，再乘上位移的單位試試。'},
+  {tag:'力學基礎',lv:2,title:'功率（瓦特 W）的單位',formula:'平均功率 P = ΔE / Δt',num:3,den:3,ans:{num:['kg','m','m'],den:['s','s','s']},deriv:'J/s = (kg·m²/s²)/s = kg·m²/s³ = W。對應因次：[P] = [M][L]²[T]⁻³。',hint:'同樣的能量，越快用完代表功率越大還是越小？',hintSub:'P = ΔE / Δt：能量的單位除以時間，會長什麼樣子？'},
+  {tag:'電學入門',lv:1,title:'電荷量（庫侖 C）的單位',formula:'恆定電流 I = Δq / Δt，所以 Δq = IΔt',num:2,den:0,ans:{num:['A','s'],den:[]},deriv:'A × s = A·s = C（庫侖）。對應因次：[q] = [I][T]。',hint:'電流固定，通電時間越長，流過的電荷量越多還是越少？',hintSub:'Δq = IΔt：相乘的兩個單位都放在分子。'},
+  {tag:'物質特性',lv:2,title:'密度 (Density) 的單位',formula:'密度 d = 質量 / 體積',num:1,den:3,ans:{num:['kg'],den:['m','m','m']},deriv:'kg / (m·m·m) = kg/m³。對應因次：[d] = [M][L]⁻³。',hint:'同樣的質量，體積越大，密度越大還是越小？',hintSub:'d = m/V：質量在分子，體積的三個邊長都在分母。'},
+  {tag:'能量題',lv:2,title:'動能 (Kinetic Energy) 的單位',formula:'動能 Ek = ½mv²；½ 沒有單位',num:3,den:2,ans:{num:['kg','m','m'],den:['s','s']},deriv:'kg × (m/s)² = kg·m²/s² = J。對應因次：[Ek] = [M][L]²[T]⁻²。',hint:'質量越大、速度越快，動能越大。',hintSub:'v² 代表速度的單位要出現兩次，再乘上質量。'},
+  {tag:'力學題',lv:2,title:'彈簧常數 (k) 的單位',formula:'虎克定律 F = kx；k = F / x（x 是伸長量）',num:1,den:2,ans:{num:['kg'],den:['s','s']},deriv:'k = F/x = (kg·m/s²) / m = kg/s²。對應因次：[k] = [M][T]⁻²。',hint:'同樣的力，越難拉長的彈簧，k 越大還是越小？',hintSub:'k = F/x：力的單位除以長度的單位，m 會消掉。'},
+  {tag:'熱學',lv:2,title:'比熱 (Specific Heat) 的單位',formula:'熱量 H = m·s·ΔT，所以 s = H / (m·ΔT)',num:2,den:3,ans:{num:['m','m'],den:['s','s','K']},deriv:'s = H/(mΔT) = (kg·m²/s²) / (kg·K) = m²/(s²·K)。對應因次：[s] = [L]²[T]⁻²[Θ]⁻¹。',hint:'同樣的熱量，質量越大、升溫越少，代表比熱越大還是越小？',hintSub:'s = H/(mΔT)：熱量的單位除以質量再除以溫度，kg 會消掉。'},
+  {tag:'波動',lv:1,title:'波速 (Wave Speed) 的單位',formula:'波速 v = fλ；f 是頻率（Hz = 1/s），λ 是波長',num:1,den:1,ans:{num:['m'],den:['s']},deriv:'fλ = (1/s) × m = m/s。對應因次：[v] = [L][T]⁻¹。',hint:'頻率越高、波長越長，波速越快。',hintSub:'Hz 就是 1/s：想想 1/s 乘上波長的單位。'},
+  {tag:'電學題',lv:2,title:'電功率 (Electric Power) 的單位',formula:'電功率 P = IV',num:3,den:3,ans:{num:['kg','m','m'],den:['s','s','s']},deriv:'IV = [kg·m²/(A·s³)] × A = kg·m²/s³ = W。對應因次：[P] = [M][L]²[T]⁻³。',hint:'電壓越高、電流越大，電功率越大。',hintSub:'P = IV：把電壓和電流的單位相乘，A 會消掉。'},
+  {tag:'能量題',lv:2,title:'重力位能的單位',formula:'重力位能 Ep = mgh；g 是重力加速度',num:3,den:2,ans:{num:['kg','m','m'],den:['s','s']},deriv:'mgh = kg × (m/s²) × m = kg·m²/s² = J。對應因次：[Ep] = [M][L]²[T]⁻²。',hint:'質量越大、位置越高，重力位能越大。',hintSub:'g 的單位就是加速度的單位，再乘上質量和高度。'}
+];
+const DIM_QS = [
+  {tag:'暖身題',lv:1,title:'速度 (Velocity) 的因次',formula:'平均速度 v = Δx / Δt',num:1,den:1,ans:{num:['[L]'],den:['[T]']},deriv:'[v] = [L] / [T] = [L][T]⁻¹。',hint:'位移越大、時間越短，速度越大。',hintSub:'v = Δx / Δt：位移是長度，時間是時間。'},
+  {tag:'力學基礎',lv:1,title:'加速度的因次',formula:'平均加速度 a = Δv / Δt',num:1,den:2,ans:{num:['[L]'],den:['[T]','[T]']},deriv:'[a] = ([L]/[T]) / [T] = [L][T]⁻²。',hint:'速度變化越快，加速度越大。',hintSub:'先想速度的因次，再除以時間。'},
+  {tag:'力學基礎',lv:2,title:'力（牛頓 N）的因次',formula:'定質量物體的合力 F = ma',num:2,den:2,ans:{num:['[M]','[L]'],den:['[T]','[T]']},deriv:'[F] = [M] × [L][T]⁻² = [M][L][T]⁻²。',hint:'質量越大、加速度越大，力越大。',hintSub:'F = ma：質量的因次乘上加速度的因次。'},
+  {tag:'能量題',lv:2,title:'功 / 能量的因次',formula:'定力作功 W = Fd cosθ；cosθ 沒有因次',num:3,den:2,ans:{num:['[M]','[L]','[L]'],den:['[T]','[T]']},deriv:'[E] = [M][L][T]⁻² × [L] = [M][L]²[T]⁻²。',hint:'力乘上位移。',hintSub:'把力的因次再乘上一個長度。'},
+  {tag:'力學基礎',lv:2,title:'功率（瓦特 W）的因次',formula:'平均功率 P = ΔE / Δt',num:3,den:3,ans:{num:['[M]','[L]','[L]'],den:['[T]','[T]','[T]']},deriv:'[P] = [M][L]²[T]⁻² / [T] = [M][L]²[T]⁻³。',hint:'能量除以時間。',hintSub:'在能量的因次分母再添一個時間。'},
+  {tag:'電學入門',lv:1,title:'電荷量（庫侖 C）的因次',formula:'恆定電流 I = Δq / Δt，所以 Δq = IΔt',num:2,den:0,ans:{num:['[I]','[T]'],den:[]},deriv:'[q] = [I] × [T] = [I][T]。',hint:'電流乘上時間。',hintSub:'兩個因次都放在分子。'},
+  {tag:'物質特性',lv:2,title:'密度的因次',formula:'密度 d = 質量 / 體積',num:1,den:3,ans:{num:['[M]'],den:['[L]','[L]','[L]']},deriv:'[d] = [M] / [L]³ = [M][L]⁻³。',hint:'同樣的質量，體積越大，密度越小。',hintSub:'質量是 [M]，體積是三個長度相乘。'},
+  {tag:'能量題',lv:2,title:'動能的因次',formula:'動能 Ek = ½mv²；½ 沒有因次',num:3,den:2,ans:{num:['[M]','[L]','[L]'],den:['[T]','[T]']},deriv:'[Ek] = [M] × ([L]/[T])² = [M][L]²[T]⁻²。',hint:'質量越大、速度越快，動能越大。',hintSub:'速度的因次出現兩次，再乘上質量。'},
+  {tag:'力學題',lv:2,title:'彈簧常數 (k) 的因次',formula:'虎克定律 F = kx；k = F / x',num:1,den:2,ans:{num:['[M]'],den:['[T]','[T]']},deriv:'[k] = [F]/[L] = [M][L][T]⁻² / [L] = [M][T]⁻²。',hint:'k = F/x：力的因次除以長度的因次。',hintSub:'[L] 在分子分母相消，剩下什麼？'},
+  {tag:'熱學',lv:2,title:'比熱的因次',formula:'s = H / (m·ΔT)',num:2,den:3,ans:{num:['[L]','[L]'],den:['[T]','[T]','[Θ]']},deriv:'[s] = [M][L]²[T]⁻² / ([M][Θ]) = [L]²[T]⁻²[Θ]⁻¹。',hint:'熱量的因次除以質量、再除以溫度。',hintSub:'[M] 相消後，剩下長度、時間和溫度。'},
+  {tag:'波動',lv:1,title:'波速的因次',formula:'波速 v = fλ；頻率 f 的因次是 [T]⁻¹',num:1,den:1,ans:{num:['[L]'],den:['[T]']},deriv:'[v] = [T]⁻¹ × [L] = [L][T]⁻¹。',hint:'頻率越高、波長越長，波速越快。',hintSub:'頻率是 1/[T]，乘上波長 [L]。'},
+  {tag:'電學題',lv:2,title:'電功率的因次',formula:'電功率 P = IV',num:3,den:3,ans:{num:['[M]','[L]','[L]'],den:['[T]','[T]','[T]']},deriv:'[P] = [M][L]²[T]⁻³[I]⁻¹ × [I] = [M][L]²[T]⁻³。',hint:'電壓的因次乘上電流的因次。',hintSub:'[I] 在分子分母相消。'},
+  {tag:'能量題',lv:2,title:'重力位能的因次',formula:'重力位能 Ep = mgh',num:3,den:2,ans:{num:['[M]','[L]','[L]'],den:['[T]','[T]']},deriv:'[Ep] = [M] × [L][T]⁻² × [L] = [M][L]²[T]⁻²。',hint:'質量、重力加速度、高度三者相乘。',hintSub:'和動能的因次一樣，驗證看看。'}
+];
+function sameMultiset(a,b){ if(a.length!==b.length) return false; return a.slice().sort().join('|')===b.slice().sort().join('|'); }
+function shuffled(arr){ const a=arr.slice(); for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+function drawRound(bank){ const take=(arr,n)=>shuffled(arr).slice(0,n); return shuffled([...take(bank.filter(q=>q.lv===1),2),...take(bank.filter(q=>q.lv===2),3)]); }
+
+/* ================= 拼圖引擎（原版核心：選卡→點格→多重集合比對） ================= */
+let ACTIVE_PUZ = null;
+function createPuzzle(prefix, opts){
+  const P = { sel:null, filled:{num:[],den:[]}, q:null, locked:false, firstTry:true };
+  const api = { load:null, get locked(){ return P.locked; } };
+  const itemOf = s => opts.items.find(i=>i.s===s);
+  function renderLib(){
+    const g = $(prefix+'Lib'); g.innerHTML='';
+    opts.items.forEach(it=>{
+      const b=document.createElement('button');
+      b.className='ucard'+(P.sel&&P.sel.s===it.s?' sel':'');
+      b.style.setProperty('--c',it.c);
+      b.innerHTML='<b>'+esc(it.s)+'</b><small>'+esc(it.n)+'</small>';
+      b.addEventListener('click',()=>{ if(P.locked) return; P.sel=(P.sel&&P.sel.s===it.s)?null:it; renderLib(); });
+      g.appendChild(b);
+    });
+  }
+  function slotEl(side,idx){
+    const v=P.filled[side][idx];
+    const d=document.createElement('div');
+    d.className='slot'+(v?' filled':'');
+    if(v){ const it=itemOf(v); d.style.setProperty('--c',it?it.c:'#374151');
+      d.innerHTML='<span>'+esc(v)+'</span>'+(it?'<small>'+esc(it.n.split(' ')[0])+'</small>':'')+(P.locked?'':'<span class="rm">×</span>');
+      if(!P.locked) d.querySelector('.rm').addEventListener('click',e=>{ e.stopPropagation(); P.filled[side][idx]=null; renderSlots(); });
+    } else d.innerHTML='<span>?</span>';
+    d.addEventListener('click',()=>{
+      if(P.locked) return;
+      if(P.sel){ P.filled[side][idx]=P.sel.s; renderSlots(); }
+      else if(P.filled[side][idx]){ P.filled[side][idx]=null; renderSlots(); }
+    });
+    return d;
+  }
+  function renderSlots(){
+    const ns=$(prefix+'Num'), ds=$(prefix+'Den');
+    ns.innerHTML=''; ds.innerHTML='';
+    for(let i=0;i<P.q.num;i++) ns.appendChild(slotEl('num',i));
+    if(P.q.den>0){ $(prefix+'Bar').style.display=''; ds.style.display='';
+      for(let i=0;i<P.q.den;i++) ds.appendChild(slotEl('den',i));
+    } else { $(prefix+'Bar').style.display='none'; ds.style.display='none'; }
+    $(prefix+'Submit').disabled = !(P.filled.num.every(Boolean)&&P.filled.den.every(Boolean)) || P.locked;
+    $(prefix+'Clear').disabled = P.locked;
+  }
+  function load(q){
+    ACTIVE_PUZ = api;
+    P.q=q; P.sel=null; P.locked=false; P.firstTry=true;
+    P.filled={num:Array(q.num).fill(null),den:Array(q.den).fill(null)};
+    $(prefix+'Title').textContent=q.title;
+    $(prefix+'Formula').textContent=q.formula;
+    $(prefix+'LibTitle').textContent=opts.libTitle;
+    $(prefix+'Feedback').innerHTML='';
+    renderLib(); renderSlots();
+  }
+  $(prefix+'Clear').addEventListener('click',()=>{ if(ACTIVE_PUZ!==api || P.locked || !P.q) return;
+    P.filled={num:Array(P.q.num).fill(null),den:Array(P.q.den).fill(null)}; renderSlots(); });
+  $(prefix+'Submit').addEventListener('click',()=>{
+    if(ACTIVE_PUZ!==api || P.locked || !P.q) return;
+    if(!(P.filled.num.every(Boolean)&&P.filled.den.every(Boolean))) return;
+    const ok = sameMultiset(P.filled.num,P.q.ans.num)&&sameMultiset(P.filled.den,P.q.ans.den);
+    if(ok){
+      P.locked=true; renderLib(); renderSlots();
+      $(prefix+'Feedback').innerHTML='<div class="panel deriv"><div class="pt">答對了'+(P.firstTry?'（首次答對）':'')+'</div><div>'+esc(P.q.deriv)+'</div></div>';
+      opts.onCorrect(P.firstTry);
+    } else {
+      const wasFirst=P.firstTry; P.firstTry=false;
+      document.querySelectorAll('#'+prefix+'Num .slot.filled, #'+prefix+'Den .slot.filled').forEach(el=>el.classList.add('wrong'));
+      $(prefix+'Feedback').innerHTML='<div class="panel hint"><div class="pt">想一想</div><div>'+esc(P.q.hint)+'</div><div>'+esc(P.q.hintSub)+'</div></div>';
+      opts.onWrong(wasFirst);
+    }
+  });
+  return { load, get locked(){ return P.locked; } };
+}
+
+/* 第 5 步：單位拼圖（力）；第 6 步：因次拼圖（功率） */
+const puz = createPuzzle('pz', { items:UNIT_ITEMS, libTitle:'基本單位庫', onCorrect:()=>passGate(5), onWrong:()=>{} });
+let puzMode = 'unit';
+function loadPuzStep(step){
+  if(step===5){ puzMode='unit'; puz.load(UNIT_QS[2]); $('pzLibTitle').textContent='基本單位庫'; }
+  if(step===6){ puzMode='dim';
+    // 換成因次卡：重建一個因次版引擎綁同 DOM 的替代做法——直接改用 dim 題與卡
+    puzDim.load(DIM_QS[4]);
+  }
+  $('scen-puzzle').dataset.mode = puzMode;
+}
+/* 因次版拼圖共用同一區 DOM（pz 前綴由兩引擎輪流驅動，進步時重載） */
+const puzDim = createPuzzle('pz', { items:DIM_ITEMS, libTitle:'基本因次庫', onCorrect:()=>passGate(6), onWrong:()=>{} });
+
+/* 第 7 步：挑戰賽（隨機 5 題、首答計分、錯題給提示後修正續走） */
+let quizQs=[], quizIdx=0, quizFirstOK=0, quizTimer=null;
+const quiz = createPuzzle('qz', { items:UNIT_ITEMS, libTitle:'基本單位庫',
+  onCorrect:(first)=>{
+    if(first) quizFirstOK++;
+    $('qzScore').textContent = String(quizFirstOK*20);
+    quizTimer=setTimeout(()=>{
+      quizIdx++;
+      if(quizIdx<quizQs.length){ $('qzProg').textContent=(quizIdx+1)+'/'+quizQs.length; quiz.load(quizQs[quizIdx]); }
+      else { $('qzSummary').innerHTML='挑戰完成：首答得分 <b>'+(quizFirstOK*20)+'</b> / 100（首次答對 '+quizFirstOK+' / 5 題）。錯的題目都修正過了，觀念有補起來。'; passGate(7); }
+    }, 1100);
+  },
+  onWrong:()=>{}
+});
+function startQuiz(){
+  quizQs = drawRound(UNIT_QS); quizIdx=0; quizFirstOK=0;
+  $('qzProg').textContent='1/'+quizQs.length;
+  $('qzScore').textContent='0';
+  $('qzSummary').textContent='';
+  quiz.load(quizQs[0]);
+}
+
+/* ================= 說明圖（靜態，無動畫） ================= */
+const cv=$('visual'), g=cv.getContext('2d');
+function box2(x,y,w,h,fill,stroke){ g.beginPath(); g.roundRect(x,y,w,h,12); g.fillStyle=fill; g.fill(); g.lineWidth=2; g.strokeStyle=stroke; g.stroke(); }
+function txt2(t,x,y,size,color,align,bold){ g.font=(bold?'700 ':'600 ')+size+'px sans-serif'; g.fillStyle=color; g.textAlign=align||'center'; g.fillText(t,x,y); g.textAlign='left'; }
+function drawVisual(step){
+  g.clearRect(0,0,1240,200); g.fillStyle='#fffdf8'; g.fillRect(0,0,1240,200);
+  if(step===2){
+    txt2('同一個量，單位可以換，因次不換',620,34,20,'#222','center',true);
+    box2(90,70,300,90,'#eef3f8','#2f7de1'); txt2('速度 v',240,105,20,'#222','center',true); txt2('單位：m/s 或 km/h',240,140,16,'#666');
+    txt2('→',450,125,30,'#d32f2f','center',true);
+    box2(520,70,300,90,'#fff8e1','#f0d98c'); txt2('因次 [L][T]⁻¹',670,105,20,'#222','center',true); txt2('長度 ÷ 時間，永遠不變',670,140,16,'#666');
+    txt2('→',880,125,30,'#d32f2f','center',true);
+    box2(950,70,220,90,'#e7f6ee','#1a7f4b'); txt2('先驗因次',1060,105,20,'#222','center',true); txt2('再算數字',1060,140,16,'#666');
+  } else if(step===3){
+    txt2('五個基本塊：所有物理量都用它們拼',620,34,20,'#222','center',true);
+    const blocks=[['[M]','質量 Mass','kg','#16a34a'],['[L]','長度 Length','m','#2563eb'],['[T]','時間 Time','s','#db2777'],['[I]','電流 Current','A','#ca8a04'],['[Θ]','溫度 Temp','K','#ea580c']];
+    blocks.forEach((b,i)=>{ const x=70+i*225; box2(x,70,200,90,'#fff',b[3]); txt2(b[0],x+100,108,26,b[3],'center',true); txt2(b[1]+'・'+b[2],x+100,142,15,'#666'); });
+  } else if(step===4){
+    txt2('拆力：F = m × a，一層一層換成因次',620,34,20,'#222','center',true);
+    box2(60,70,240,90,'#eef3f8','#2f7de1'); txt2('m（質量）',180,105,19,'#222','center',true); txt2('[M]',180,142,20,'#2f7de1','center',true);
+    txt2('×',330,125,26,'#d32f2f','center',true);
+    box2(380,70,330,90,'#eef3f8','#2f7de1'); txt2('a = v ÷ t = [L][T]⁻¹ ÷ [T]',545,105,19,'#222','center',true); txt2('[a] = [L][T]⁻²',545,142,20,'#2f7de1','center',true);
+    txt2('＝',745,125,26,'#d32f2f','center',true);
+    box2(790,70,390,90,'#e7f6ee','#1a7f4b'); txt2('[F] = [M][L][T]⁻²',985,105,22,'#222','center',true); txt2('單位：kg·m/s² = N',985,142,16,'#666');
+  }
+}
+
+/* ================= 步驟引擎（置頂橫條版） ================= */
+const stepEls=document.querySelectorAll('.step');
+const dotsBox=$('dots');
+const SCEN={1:'',2:'visual',3:'visual',4:'visual',5:'puzzle',6:'puzzle',7:'quiz',8:'',9:'',10:''};
+let curStep=1, unlocked=1;
+const passed={};
+stepEls.forEach((s,i)=>{
+  const d=document.createElement('button');
+  d.className='dot'+(i===0?' on':''); d.textContent=String(i+1);
+  d.disabled=i>0;
+  d.addEventListener('click',()=>{ if(i+1<=unlocked) showStep(i+1); });
+  dotsBox.appendChild(d);
+});
+function syncNav(){
+  $('btnPrev').disabled=curStep===1;
+  $('btnNext').disabled=!passed[curStep];
+  dotsBox.querySelectorAll('.dot').forEach((d,i)=>{
+    d.classList.toggle('on',i===curStep-1);
+    d.classList.toggle('done',!!passed[i+1]);
+    d.disabled=(i+1)>unlocked;
+  });
+}
+function showStep(n){
+  curStep=n;
+  stepEls.forEach((s,i)=>s.classList.toggle('on',i===n-1));
+  const sc=SCEN[n]||'';
+  $('scen-visual').classList.toggle('on',sc==='visual');
+  $('scen-puzzle').classList.toggle('on',sc==='puzzle');
+  $('scen-quiz').classList.toggle('on',sc==='quiz');
+  $('simcard').style.display=sc?'':'none';
+  if(sc==='visual') drawVisual(n);
+  if(sc==='puzzle') loadPuzStep(n);
+  if(sc==='quiz' && !quizQs.length) startQuiz();
+  syncNav();
+}
+function passGate(n){ passed[n]=true; if(n+1>unlocked) unlocked=n+1; syncNav(); }
+$('btnNext').addEventListener('click',()=>{ if(curStep<10&&passed[curStep]) showStep(curStep+1); });
+$('btnPrev').addEventListener('click',()=>{ if(curStep>1) showStep(curStep-1); });
+$('btnRestart').addEventListener('click',()=>location.reload());
+
+/* 第 1 步：先猜 */
+let myPred='';
+document.querySelectorAll('#s1 .choice').forEach(b=>{
+  b.addEventListener('click',()=>{
+    document.querySelectorAll('#s1 .choice').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active'); myPred=b.dataset.pred;
+    const fb=$('predFb');
+    if(myPred==='A'){ fb.className='feedback ok'; fb.textContent='記住你的預測：A。第 4 步拆完力，再回來看你猜得對不對。'; }
+    else { fb.className='feedback'; fb.textContent='記住你的預測：'+myPred+'。第 4 步拆完力，就知道答案是哪一個。'; }
+    passGate(1);
+  });
+});
+$('btnDimDone').addEventListener('click',()=>passGate(2));
+$('btnBlocksDone').addEventListener('click',()=>passGate(3));
+$('btnDemoDone').addEventListener('click',()=>passGate(4));
+$('btnCardDone').addEventListener('click',()=>passGate(8));
+$('btnMythDone').addEventListener('click',()=>passGate(9));
+
+/* 第 10 步：遷移挑戰 */
+document.querySelectorAll('[data-q10]').forEach(b=>{
+  b.addEventListener('click',()=>{
+    document.querySelectorAll('[data-q10]').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
+    const fb=$('f10Fb');
+    if(b.dataset.q10==='bad'){ fb.className='feedback ok'; fb.textContent='對了：左邊 [L]，右邊 [L][T]，因次不同，這條公式一定錯——不用算數字就抓到了。'; $('q10b').style.display=''; }
+    else { fb.className='feedback no'; fb.textContent='再比一次：左邊只有 [L]，右邊多了一個 [T]。因次不一樣，還能相等嗎？'; }
+  });
+});
+$('btnCheck10').addEventListener('click',()=>{
+  const v=Number($('inT10').value), fb=$('f10bFb');
+  if(v===1){ fb.className='feedback ok'; fb.textContent='對了：p = m × v，[p] = [M] × [L][T]⁻¹ = [M][L][T]⁻¹，分母只有 1 個 [T]。你已經會用因次驗公式了。'; $('finishRow').style.display=''; passGate(10); }
+  else { fb.className='feedback no'; fb.textContent='再拆一次：v 的因次是 [L][T]⁻¹，乘上 [M] 之後，[T] 出現幾次？'; }
+});
+
+showStep(1);
+</script>
+</body>
+</html>
